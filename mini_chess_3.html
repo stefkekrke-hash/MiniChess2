@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#151c29">
+<title>Mini Chess 3.0</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:Arial,sans-serif;background:#151c29;color:#f5f5f5}
+button{cursor:pointer;font-family:inherit}
+button:disabled{opacity:.45;cursor:not-allowed}
+.hidden{display:none!important}
+.menu-screen{min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}
+.menu-card{width:100%;max-width:480px;background:#202b3c;padding:32px;border-radius:18px;text-align:center;box-shadow:0 15px 50px #0005}
+.logo{font-size:65px;margin-bottom:5px}
+.menu-card h1{color:#e8bd68;font-size:32px;margin:10px 0}
+.menu-card p{color:#aab6c7;line-height:1.5}
+.menu-step{margin-top:24px}
+.choice-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:18px 0}
+.choice-button{padding:15px 8px;background:#303e53;border:2px solid transparent;color:white;border-radius:10px;font-weight:bold}
+.choice-button span{display:block;margin-top:6px;font-size:12px;font-weight:normal;color:#bac5d3}
+.choice-button.active{border-color:#e8bd68;background:#46536a}
+.difficulty-options{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+.difficulty{padding:15px 5px;background:#303e53;border:2px solid transparent;color:white;border-radius:10px;font-weight:bold}
+.difficulty span{display:block;margin-top:7px;font-size:12px;font-weight:normal;color:#bac5d3}
+.difficulty.active{border-color:#e8bd68;background:#46536a}
+.start-button{width:100%;padding:16px;border:none;border-radius:10px;background:#e8bd68;color:#192333;font-size:17px;font-weight:bold;margin-top:12px}
+.start-button:hover{background:#f5d28d}
+.secondary-menu-button{width:100%;padding:12px;border:1px solid #536178;border-radius:9px;background:#303e53;color:white;margin-top:9px}
+.game-screen{min-height:100vh;padding:25px 15px;width:100%;max-width:1200px;margin:auto}
+.game-header{max-width:1000px;margin:0 auto 22px;display:flex;align-items:center;justify-content:space-between;gap:15px}
+.game-header h1{color:#e8bd68;margin:0}
+.small-button{padding:10px 15px;background:#303e53;color:white;border:1px solid #536178;border-radius:7px}
+.game-layout{max-width:1000px;margin:auto;display:grid;grid-template-columns:minmax(280px,560px) minmax(220px,300px);gap:25px;justify-content:center}
+.board-area{width:100%;min-width:0}
+.player-label{background:#263448;padding:10px 12px;margin-bottom:10px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.player-name{display:flex;align-items:center;gap:8px}
+.clock{font-variant-numeric:tabular-nums;font-size:20px;font-weight:bold;background:#172231;padding:5px 10px;border-radius:6px;min-width:76px;text-align:center}
+.clock.active{background:#e8bd68;color:#182231}
+.clock.low{color:#ff7770}
+.board{width:100%;max-width:560px;aspect-ratio:1;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);border:5px solid #303e53;border-radius:5px;overflow:hidden;margin:0 auto;touch-action:manipulation}
+.square{position:relative;display:flex;align-items:center;justify-content:center;font-size:clamp(25px,6vw,55px);cursor:pointer;user-select:none;min-width:0;min-height:0}
+.light{background:#eee4ce}.dark{background:#779656}
+.square.selected{background:#eacb55}
+.square.last-move{background-image:linear-gradient(#e8d34b70,#e8d34b70)}
+.square.possible:after{content:"";position:absolute;width:20%;height:20%;background:#263c286e;border-radius:50%}
+.square.capture{outline:4px solid #d64c43;outline-offset:-5px}
+.white-piece{color:#fffdf5;text-shadow:1px 2px 3px #222}
+.black-piece{color:#171717;text-shadow:1px 1px 2px #fff8}
+.side-panel{background:#202b3c;border-radius:12px;padding:20px;align-self:start;min-width:0}
+.side-panel h3{color:#e8bd68;margin-top:0}
+.status-box{background:#303e53;padding:15px;border-radius:8px;margin-bottom:18px;line-height:1.5}
+.moves-list{height:260px;overflow-y:auto;background:#182231;padding:12px;border-radius:8px;font-size:14px}
+.move-row{display:grid;grid-template-columns:35px 1fr 1fr;padding:7px 3px;border-bottom:1px solid #303e53;gap:5px}
+.move-number{color:#8290a3}
+.game-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.action-button{border:none;border-radius:7px;padding:12px;background:#40516b;color:white}
+.action-button:hover{background:#526783}
+.action-button.primary{background:#e8bd68;color:#182231;font-weight:bold}
+.thinking{color:#e8bd68;font-size:13px;margin-top:10px}
+.game-meta{font-size:12px;color:#aab6c7;margin:0 0 14px}
+.modal{position:fixed;inset:0;background:#000b;display:flex;justify-content:center;align-items:center;z-index:10;padding:18px}
+.modal-card{background:#202b3c;padding:25px;border-radius:12px;text-align:center;max-width:360px;width:100%}
+.promotion-options{display:flex;gap:12px;margin-top:20px;justify-content:center}
+.promotion-options button{font-size:40px;background:#40516b;border:none;border-radius:8px;width:65px;height:65px;color:white}
+@media(max-width:720px){.game-layout{grid-template-columns:minmax(0,560px)}.game-screen{padding:12px}.game-header h1{font-size:21px}}
+html{-webkit-text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+button,.square{touch-action:manipulation}
+@media(max-width:600px){
+ .game-screen{padding:10px}.game-header{margin-bottom:15px}.game-header h1{font-size:20px}
+ .small-button{padding:9px;font-size:12px}.game-layout{display:flex;flex-direction:column;gap:15px}
+ .board-area{width:100%}.board{width:100%;max-width:500px;border-width:3px}
+ .square{font-size:clamp(30px,10vw,52px)}.player-label{padding:9px;font-size:13px}
+ .clock{font-size:17px;min-width:68px}.side-panel{width:100%;padding:15px}
+ .moves-list{height:130px}.game-actions{grid-template-columns:1fr 1fr}
+ .action-button{padding:13px 7px;font-size:12px}.menu-card{padding:25px 18px}
+ .menu-card h1{font-size:27px}.choice-grid{gap:7px}
+}
+@media(max-width:360px){.square{font-size:27px}.game-header h1{font-size:17px}.player-label{font-size:11px}.clock{font-size:15px;min-width:60px}}
+</style>
+</head>
+<body>
+<section class="menu-screen" id="menuScreen">
+ <div class="menu-card">
+  <div class="logo">♟</div><h1>MINI CHESS 3.0</h1>
+  <p>Izazovi računar i testiraj svoje šahovsko umeće.</p>
+  <div id="timeStep" class="menu-step">
+   <h3>1. Izaberi vreme za partiju</h3>
+   <div class="choice-grid">
+    <button class="choice-button active" data-time="3">3 MIN<span>Blitz</span></button>
+    <button class="choice-button" data-time="5">5 MIN<span>Blitz</span></button>
+    <button class="choice-button" data-time="10">10 MIN<span>Rapid</span></button>
+    <button class="choice-button" data-time="15">15 MIN<span>Rapid</span></button>
+    <button class="choice-button" data-time="30">30 MIN<span>Classical</span></button>
+    <button class="choice-button" data-time="0">Bez tajmera<span>Unlimited</span></button>
+   </div>
+   <button class="start-button" id="continueButton">NASTAVI</button>
+  </div>
+  <div id="difficultyStep" class="menu-step hidden">
+   <h3>2. Izaberi težinu protivnika</h3>
+   <div class="difficulty-options">
+    <button class="difficulty" data-level="easy">EASY<span>Lako</span></button>
+    <button class="difficulty active" data-level="medium">MEDIUM<span>Srednje</span></button>
+    <button class="difficulty" data-level="hard">HARD<span>Teško</span></button>
+   </div>
+   <p id="chosenTimeText"></p>
+   <button class="start-button" id="startButton">ZAPOČNI PARTIJU</button>
+   <button class="secondary-menu-button" id="backToTimeButton">← Promeni vreme</button>
+  </div>
+  <p style="font-size:12px;margin-top:20px">Ti igraš belim figurama. Računar igra crnim.</p>
+ </div>
+</section>
+
+<section class="game-screen hidden" id="gameScreen">
+ <header class="game-header"><h1>♟ MINI CHESS</h1><button class="small-button" id="menuButton">← Glavni meni</button></header>
+ <main class="game-layout">
+  <div class="board-area">
+   <div class="player-label"><span class="player-name">♟ Računar (Crni) <span id="computerLevel">MEDIUM</span></span><span class="clock" id="blackClock">05:00</span></div>
+   <div class="board" id="board"></div>
+   <div class="player-label" style="margin-top:10px"><span class="player-name">♙ Ti (Beli) <span id="playerStatus">Na potezu</span></span><span class="clock active" id="whiteClock">05:00</span></div>
+  </div>
+  <aside class="side-panel">
+   <h3>Informacije o partiji</h3>
+   <div class="status-box" id="status">Partija je spremna.</div>
+   <p class="game-meta" id="gameMeta">Vreme: 5 minuta · Težina: Medium</p>
+   <h3>Odigrani potezi</h3>
+   <div class="moves-list" id="movesList"><p style="color:#8997a9">Još nema odigranih poteza.</p></div>
+   <div class="thinking hidden" id="thinking">Računar razmišlja...</div>
+   <div class="game-actions">
+    <button class="action-button primary" id="newGameButton">Nova partija</button>
+    <button class="action-button" id="restartButton">Restartuj</button>
+   </div>
+  </aside>
+ </main>
+</section>
+
+<div class="modal hidden" id="promotionModal"><div class="modal-card"><h3>Izaberi figuru za promociju</h3><div class="promotion-options" id="promotionOptions"></div></div></div>
+
+<script type="module">
+import { Chess } from "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm";
+
+const $ = id => document.getElementById(id);
+const menuScreen=$("menuScreen"),gameScreen=$("gameScreen"),boardElement=$("board");
+const statusElement=$("status"),movesList=$("movesList"),thinkingElement=$("thinking");
+const promotionModal=$("promotionModal");
+const symbols={wk:"♔",wq:"♕",wr:"♖",wb:"♗",wn:"♘",wp:"♙",bk:"♚",bq:"♛",br:"♜",bb:"♝",bn:"♞",bp:"♟"};
+const values={p:100,n:320,b:335,r:500,q:900,k:20000};
+let game=new Chess(),difficulty="medium",selectedTime=3,timeSeconds=180;
+let whiteTime=180,blackTime=180,lastTick=0,timerId=null;
+let selectedSquare=null,legalMoves=[],aiThinking=false,gameFinished=false,promotionPending=false,lastMove=null,gameToken=0;
+let searchTable=new Map(),searchDeadline=0,searchNodes=0,searchAborted=false;
+const configs={
+ easy:{maxDepth:2,budget:120,randomWindow:100},
+ medium:{maxDepth:4,budget:500,randomWindow:40},
+ hard:{maxDepth:7,budget:1400,randomWindow:18}
+};
+
+document.querySelectorAll(".choice-button").forEach(btn=>btn.addEventListener("click",()=>{
+ document.querySelectorAll(".choice-button").forEach(b=>b.classList.remove("active"));
+ btn.classList.add("active");selectedTime=Number(btn.dataset.time);
+}));
+$("continueButton").onclick=()=>{
+ $("timeStep").classList.add("hidden");$("difficultyStep").classList.remove("hidden");
+ $("chosenTimeText").textContent=selectedTime===0?"Izabrano vreme: bez ograničenja":`Izabrano vreme: ${selectedTime} minuta po igraču`;
+};
+$("backToTimeButton").onclick=()=>{$("difficultyStep").classList.add("hidden");$("timeStep").classList.remove("hidden")};
+document.querySelectorAll(".difficulty").forEach(btn=>btn.addEventListener("click",()=>{
+ document.querySelectorAll(".difficulty").forEach(b=>b.classList.remove("active"));
+ btn.classList.add("active");difficulty=btn.dataset.level;
+}));
+$("startButton").onclick=()=>startGame();
+$("menuButton").onclick=()=>{
+ gameToken++;stopClock();aiThinking=false;gameScreen.classList.add("hidden");menuScreen.classList.remove("hidden");
+ $("timeStep").classList.remove("hidden");$("difficultyStep").classList.add("hidden");
+};
+$("restartButton").onclick=()=>startGame();
+$("newGameButton").onclick=()=>{
+ gameToken++;stopClock();gameScreen.classList.add("hidden");menuScreen.classList.remove("hidden");
+ $("timeStep").classList.remove("hidden");$("difficultyStep").classList.add("hidden");
+};
+
+function startGame(){
+ gameToken++;stopClock();game=new Chess();whiteTime=selectedTime*60;blackTime=selectedTime*60;
+ selectedSquare=null;legalMoves=[];aiThinking=false;gameFinished=false;promotionPending=false;lastMove=null;
+ searchTable.clear();menuScreen.classList.add("hidden");gameScreen.classList.remove("hidden");
+ $("computerLevel").textContent=difficulty.toUpperCase();promotionModal.classList.add("hidden");thinkingElement.classList.add("hidden");
+ $("gameMeta").textContent=`Vreme: ${selectedTime===0?"bez ograničenja":selectedTime+" min"} · Težina: ${difficulty.toUpperCase()}`;
+ render();updateClocks();startClock();
+}
+function startClock(){if(selectedTime===0)return;lastTick=Date.now();timerId=setInterval(tickClock,200)}
+function stopClock(){if(timerId){clearInterval(timerId);timerId=null}}
+function tickClock(){
+ if(gameFinished||selectedTime===0)return;
+ const now=Date.now(),elapsed=(now-lastTick)/1000;lastTick=now;
+ if(game.turn()==="w")whiteTime=Math.max(0,whiteTime-elapsed);else blackTime=Math.max(0,blackTime-elapsed);
+ updateClocks();
+ if(whiteTime<=0)finishOnTime("w");
+ if(blackTime<=0)finishOnTime("b");
+}
+function formatTime(seconds){
+ const total=Math.ceil(Math.max(0,seconds)),m=Math.floor(total/60),s=total%60;
+ return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+}
+function updateClocks(){
+ $("whiteClock").textContent=selectedTime===0?"∞":formatTime(whiteTime);
+ $("blackClock").textContent=selectedTime===0?"∞":formatTime(blackTime);
+ $("whiteClock").classList.toggle("active",!gameFinished&&game.turn()==="w");
+ $("blackClock").classList.toggle("active",!gameFinished&&game.turn()==="b");
+ $("whiteClock").classList.toggle("low",whiteTime<=20&&selectedTime!==0);
+ $("blackClock").classList.toggle("low",blackTime<=20&&selectedTime!==0);
+}
+function finishOnTime(flaggedColor){
+ if(gameFinished)return;
+ gameFinished=true;aiThinking=false;stopClock();thinkingElement.classList.add("hidden");
+ const winner=flaggedColor==="w"?"Računar":"Ti";
+ statusElement.textContent=`Vreme je isteklo! ${winner} je pobedio.`;
+ $("playerStatus").textContent="Partija završena";updateClocks();
+}
+function render(){
+ boardElement.innerHTML="";const board=game.board();
+ for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+  const name=String.fromCharCode(97+c)+(8-r),piece=board[r][c],sq=document.createElement("div");
+  sq.className="square "+((r+c)%2===0?"light":"dark");
+  if(selectedSquare===name)sq.classList.add("selected");
+  if(lastMove&&(lastMove.from===name||lastMove.to===name))sq.classList.add("last-move");
+  const targets=legalMoves.filter(m=>m.to===name);
+  if(targets.length){if(piece)sq.classList.add("capture");else sq.classList.add("possible")}
+  if(piece){sq.textContent=symbols[piece.color+piece.type];sq.classList.add(piece.color==="w"?"white-piece":"black-piece")}
+  sq.addEventListener("click",()=>handleSquareClick(name));boardElement.appendChild(sq);
+ }
+ updateStatus();updateMoveList();updateClocks();
+}
+function handleSquareClick(square){
+ if(gameFinished||aiThinking||promotionPending||game.turn()!=="w")return;
+ if(selectedSquare){
+  const possible=legalMoves.filter(m=>m.to===square);
+  if(possible.length){
+   if(possible.some(m=>m.promotion)){showPromotionMenu(square);return}
+   makePlayerMove(square);return;
+  }
+ }
+ const piece=game.get(square);
+ if(piece&&piece.color==="w"){selectedSquare=square;legalMoves=game.moves({square,verbose:true})}
+ else{selectedSquare=null;legalMoves=[]}
+ render();
+}
+function showPromotionMenu(target){
+ promotionPending=true;const container=$("promotionOptions");container.innerHTML="";
+ ["q","r","b","n"].forEach(type=>{
+  const button=document.createElement("button");button.textContent=symbols["w"+type];
+  button.onclick=()=>{promotionPending=false;promotionModal.classList.add("hidden");makePlayerMove(target,type)};
+  container.appendChild(button);
+ });
+ promotionModal.classList.remove("hidden");
+}
+function makePlayerMove(target,promotion="q"){
+ try{
+  const move=game.move({from:selectedSquare,to:target,promotion});
+  if(!move)return;
+  lastMove={from:move.from,to:move.to};selectedSquare=null;legalMoves=[];render();
+  if(checkGameOver())return;
+  aiThinking=true;thinkingElement.classList.remove("hidden");updateStatus();
+  const token=gameToken;
+  setTimeout(()=>{if(token!==gameToken||gameFinished)return;computerMove(token)},120);
+ }catch(error){console.error(error)}
+}
+
+// Evaluacija je uvek iz perspektive crnog: pozitivan rezultat je dobar za računar.
+function evaluate(position){
+ const board=position.board();let score=0;
+ for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+  const p=board[r][c];if(!p)continue;
+  let v=values[p.type];const center=(3.5-Math.abs(3.5-c))+(3.5-Math.abs(3.5-r));
+  if(p.type==="n")v+=center*13;
+  if(p.type==="b")v+=center*7;
+  if(p.type==="p"){
+   const advance=p.color==="b"?r:7-r;v+=advance*7;
+   if(c>=2&&c<=5)v+=5;
+  }
+  if(p.type==="q")v+=center*2;
+  // Mala prednost za rokadu i razvoj u početnoj fazi.
+  score+=p.color==="b"?v:-v;
+ }
+ return score;
+}
+function moveOrderScore(m){
+ let s=0;
+ if(m.captured)s+=10*values[m.captured]-values[m.piece];
+ if(m.promotion)s+=values[m.promotion]+800;
+ if(m.san&&m.san.includes("+"))s+=45;
+ if(m.san&&m.san.includes("#"))s+=100000;
+ return s;
+}
+function orderedMoves(position,ttMove=null){
+ const moves=position.moves({verbose:true});
+ moves.sort((a,b)=>{
+  if(ttMove){if(a.from===ttMove.from&&a.to===ttMove.to)return -1;if(b.from===ttMove.from&&b.to===ttMove.to)return 1}
+  return moveOrderScore(b)-moveOrderScore(a);
+ });
+ return moves;
+}
+function checkSearchTime(){
+ searchNodes++;
+ if((searchNodes&127)===0&&performance.now()>searchDeadline)throw new Error("SEARCH_TIMEOUT");
+}
+function minimax(position,depth,alpha,beta,ply){
+ checkSearchTime();
+ if(position.isCheckmate())return position.turn()==="b"?-100000+ply:100000-ply;
+ if(position.isDraw())return 0;
+ if(depth<=0)return evaluate(position);
+ const fen=position.fen(),entry=searchTable.get(fen);
+ if(entry&&entry.depth>=depth){
+  if(entry.flag==="exact")return entry.score;
+  if(entry.flag==="lower")alpha=Math.max(alpha,entry.score);
+  if(entry.flag==="upper")beta=Math.min(beta,entry.score);
+  if(alpha>=beta)return entry.score;
+ }
+ const alphaStart=alpha,betaStart=beta,maximizing=position.turn()==="b";
+ let best=maximizing?-Infinity:Infinity,bestMove=null;
+ const moves=orderedMoves(position,entry&&entry.bestMove);
+ if(!moves.length)return position.isCheck()? (maximizing?-100000+ply:100000-ply):0;
+ for(const move of moves){
+  position.move({from:move.from,to:move.to,promotion:move.promotion||"q"});
+  const score=minimax(position,depth-1,alpha,beta,ply+1);
+  position.undo();
+  if(maximizing){if(score>best){best=score;bestMove={from:move.from,to:move.to}}alpha=Math.max(alpha,best)}
+  else{if(score<best){best=score;bestMove={from:move.from,to:move.to}}beta=Math.min(beta,best)}
+  if(beta<=alpha)break;
+ }
+ const flag=best<=alphaStart?"upper":best>=betaStart?"lower":"exact";
+ searchTable.set(fen,{depth,score:best,flag,bestMove});
+ if(searchTable.size>50000)searchTable.clear();
+ return best;
+}
+const yieldToBrowser=()=>new Promise(resolve=>setTimeout(resolve,0));
+async function chooseComputerMove(){
+ const cfg=configs[difficulty],root=new Chess(game.fen()),rootMoves=orderedMoves(root);
+ if(!rootMoves.length)return null;
+ searchDeadline=performance.now()+cfg.budget;searchNodes=0;searchAborted=false;
+ let completedMove=rootMoves[Math.floor(Math.random()*rootMoves.length)];
+ let completedScores=[];
+ for(let depth=1;depth<=cfg.maxDepth;depth++){
+  try{
+   const scored=[];let alpha=-Infinity;
+   const ordered=orderedMoves(root);
+   for(const move of ordered){
+    root.move({from:move.from,to:move.to,promotion:move.promotion||"q"});
+    const score=minimax(root,depth-1,alpha,Infinity,1);
+    root.undo();
+    scored.push({move,score});alpha=Math.max(alpha,score);
+   }
+   scored.sort((a,b)=>b.score-a.score);
+   completedScores=scored;
+   const best=scored[0].score;
+   const window=cfg.randomWindow;
+   const candidates=scored.filter(x=>x.score>=best-window);
+   // Blaga kontrolisana slučajnost sprečava potpuno identične odgovore,
+   // ali računar bira samo poteze koji su blizu najboljeg pronađenog poteza.
+   completedMove=candidates[Math.floor(Math.random()*candidates.length)].move;
+  }catch(error){
+   if(error.message!=="SEARCH_TIMEOUT")throw error;
+   searchAborted=true;break;
+  }
+  if(performance.now()>searchDeadline)break;
+  await yieldToBrowser();
+ }
+ return completedMove;
+}
+async function computerMove(token){
+ if(token!==gameToken||gameFinished)return;
+ try{
+  const move=await chooseComputerMove();
+  if(token!==gameToken||gameFinished)return;
+  if(!move){aiThinking=false;thinkingElement.classList.add("hidden");checkGameOver();return}
+  const result=game.move({from:move.from,to:move.to,promotion:move.promotion||"q"});
+  lastMove={from:result.from,to:result.to};aiThinking=false;thinkingElement.classList.add("hidden");
+  render();checkGameOver();
+ }catch(error){
+  console.error("Computer error:",error);aiThinking=false;thinkingElement.classList.add("hidden");render();
+ }
+}
+function checkGameOver(){
+ if(!game.isGameOver())return false;
+ gameFinished=true;aiThinking=false;stopClock();thinkingElement.classList.add("hidden");
+ let message="";
+ if(game.isCheckmate())message=game.turn()==="w"?"ŠAH-MAT! Računar je pobedio.":"ŠAH-MAT! Ti si pobedio!";
+ else if(game.isStalemate())message="PAT! Partija je nerešena.";
+ else if(game.isThreefoldRepetition())message="Nerešeno – ponavljanje pozicije.";
+ else if(game.isInsufficientMaterial())message="Nerešeno – nedovoljno figura.";
+ else if(game.isDrawByFiftyMoves())message="Nerešeno – pravilo 50 poteza.";
+ else message="Partija je završena – nerešeno.";
+ statusElement.textContent=message;$("playerStatus").textContent="Partija završena";updateClocks();return true;
+}
+function updateStatus(){
+ if(gameFinished)return;
+ if(aiThinking)statusElement.textContent="Računar analizira poziciju...";
+ else if(game.isCheck())statusElement.textContent="ŠAH! Kralj je napadnut.";
+ else statusElement.textContent=game.turn()==="w"?"Tvoj potez – igraš belim figurama.":"Na potezu je računar.";
+ $("playerStatus").textContent=game.turn()==="w"?"Na potezu":"Čekaj...";
+}
+function updateMoveList(){
+ const history=game.history();movesList.innerHTML="";
+ if(!history.length){movesList.innerHTML='<p style="color:#8997a9">Još nema poteza.</p>';return}
+ for(let i=0;i<history.length;i+=2){
+  const row=document.createElement("div");row.className="move-row";
+  const number=document.createElement("span");number.className="move-number";number.textContent=(i/2+1)+".";
+  const white=document.createElement("span");white.textContent=history[i];
+  const black=document.createElement("span");black.textContent=history[i+1]||"";
+  row.append(number,white,black);movesList.appendChild(row);
+ }
+ movesList.scrollTop=movesList.scrollHeight;
+}
+</script>
+</body>
+</html>
